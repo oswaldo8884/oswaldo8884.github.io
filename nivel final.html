@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>PROYECTO OMEGA - Protocolo de Desactivación Final</title>
+    <style>
+        :root { --danger: #ff4444; --success: #00C851; --rad: #ccff00; --bg: #050505; }
+        body { background: var(--bg); color: white; font-family: 'Courier New', monospace; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; overflow: hidden; user-select: none; }
+        
+        #omega-panel { 
+            background: #111; padding: 20px; border: 4px double #444; width: 850px; 
+            display: grid; grid-template-columns: 1fr 1fr; gap: 20px; position: relative;
+            transition: transform 0.1s ease-out;
+        }
+
+        /* Glitch y Vibración */
+        .caos-total { animation: shake 0.1s infinite; filter: hue-rotate(20deg) contrast(1.2); }
+        @keyframes shake { 
+            0% { transform: translate(2px, 1px) rotate(var(--tilt)); } 
+            50% { transform: translate(-2px, -1px) rotate(var(--tilt)); } 
+            100% { transform: translate(0, 0) rotate(var(--tilt)); } 
+        }
+
+        .module { background: #1a1a1a; border: 1px solid #333; padding: 15px; border-radius: 5px; position: relative; }
+        h3 { margin: 0 0 10px 0; font-size: 0.75rem; color: #888; border-bottom: 1px solid #333; letter-spacing: 1px; }
+
+        /* MÓDULO 1: MERCURIO */
+        #mercury-tube { width: 100%; height: 40px; background: #000; border-radius: 20px; position: relative; overflow: hidden; border: 2px solid #333; }
+        #drop { width: 25px; height: 25px; background: radial-gradient(circle at 30% 30%, #fff, #666); border-radius: 50%; position: absolute; top: 7.5px; left: 50%; transform: translateX(-50%); box-shadow: 0 0 15px #aaa; }
+
+        /* MÓDULO 2: PRESIÓN */
+        #gauge { width: 100%; height: 15px; background: #222; margin-top: 15px; border-radius: 10px; position: relative; border: 1px solid #444; }
+        #needle { width: 4px; height: 30px; background: var(--danger); position: absolute; top: -8px; left: 50%; box-shadow: 0 0 5px red; transition: left 0.1s; }
+
+        /* MÓDULO 3: QUÍMICA */
+        .stat { font-size: 1.8rem; font-weight: bold; font-family: 'Digital-7', monospace; }
+        #temp-bar-wrap { width: 100%; height: 12px; background: #000; margin-top: 8px; border: 1px solid #333; }
+        #temp-bar-fill { width: 20%; height: 100%; background: var(--success); transition: width 0.3s; }
+
+        /* MÓDULO 4: RADIACIÓN */
+        #core-shield-area { width: 100%; height: 120px; background: #000; position: relative; overflow: hidden; border: 1px solid #444; cursor: crosshair; }
+        #core { width: 25px; height: 25px; background: var(--rad); border-radius: 50%; position: absolute; top: 47px; left: 177px; box-shadow: 0 0 30px var(--rad); }
+        #shield { width: 80px; height: 80px; border: 2px solid #fff; border-radius: 50%; position: absolute; cursor: grab; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; font-size: 0.6rem; font-weight: bold; z-index: 5; box-shadow: inset 0 0 10px white; }
+
+        .wires { display: flex; justify-content: space-around; margin-top: 15px; }
+        .wire { width: 30px; height: 60px; cursor: pointer; border: 2px solid #000; border-radius: 4px; }
+
+        #main-timer { grid-column: span 2; font-size: 4rem; color: var(--danger); text-align: center; font-weight: bold; text-shadow: 0 0 15px rgba(255,0,0,0.3); }
+
+        #overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); z-index: 1000; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 40px; box-sizing: border-box; }
+        button { padding: 12px 30px; background: var(--success); color: white; border: none; cursor: pointer; font-family: inherit; font-weight: bold; font-size: 1rem; border-radius: 5px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+<a href="menu.html" style="
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    padding: 10px 15px;
+    background: rgba(0, 255, 65, 0.1);
+    border: 1px solid #00ff41;
+    color: #00ff41;
+    text-decoration: none;
+    font-family: 'Courier New', monospace;
+    font-size: 0.8rem;
+    font-weight: bold;
+    border-radius: 4px;
+    z-index: 2000;
+    transition: all 0.3s;
+">
+    &lt; VOLVER AL MENU
+</a>
+<div id="omega-panel">
+    <div class="module">
+        <h3>MÓDULO I: NIVEL DE MERCURIO (MOUSE)</h3>
+        <div id="mercury-tube"><div id="drop"></div></div>
+    </div>
+
+    <div class="module">
+        <h3>MÓDULO II: PRESIÓN DE GAS [A | S]</h3>
+        <div id="gauge"><div id="needle"></div></div>
+        <small style="color: #555; font-size: 0.6rem;">ZONA CRÍTICA: EXTREMOS</small>
+    </div>
+
+    <div class="module">
+        <h3>MÓDULO III: REACTOR QUÍMICO [↑ | ↓]</h3>
+        <div style="display: flex; justify-content: space-around; align-items: center;">
+            <div><small>pH:</small> <div id="ph-val" class="stat">1.2</div></div>
+            <div><small>TEMP:</small> <div id="temp-val" class="stat">25</div></div>
+        </div>
+        <div id="temp-bar-wrap"><div id="temp-bar-fill"></div></div>
+    </div>
+
+    <div class="module">
+        <h3>MÓDULO IV: NÚCLEO GAMMA (DRAG PLOMO)</h3>
+        <div id="core-shield-area">
+            <div id="core"></div>
+            <div id="shield">PLOMO</div>
+        </div>
+        <div class="wires">
+            <div class="wire" id="w0" onclick="cut(0)"></div>
+            <div class="wire" id="w1" onclick="cut(1)"></div>
+            <div class="wire" id="w2" onclick="cut(2)"></div>
+        </div>
+    </div>
+
+    <div id="main-timer">60.00</div>
+
+    <div id="overlay">
+        <h1 id="title"></h1>
+        <p id="reason" style="font-size: 1.2rem;"></p>
+        <p id="advice" style="color: #888; font-size: 0.9rem; margin: 25px; line-height: 1.5; max-width: 500px;"></p>
+        <button onclick="location.reload()">REINICIAR PROTOCOLO OMEGA</button>
+    </div>
+
+
+<script>
+    let state = {
+        active: true, timer: 60.00, tilt: 0,
+        mercPos: 50, mercVel: 0,
+        pressure: 50, ph: 1.2, temp: 25,
+        rad: true, shieldX: 20, shieldY: 20, dragging: false
+    };
+
+    const shield = document.getElementById('shield');
+    const panel = document.getElementById('omega-panel');
+
+    // Manejo del escudo de plomo
+    shield.onmousedown = () => state.dragging = true;
+    window.onmouseup = () => state.dragging = false;
+    window.onmousemove = (e) => {
+        if(state.dragging) {
+            const rect = document.getElementById('core-shield-area').getBoundingClientRect();
+            state.shieldX = e.clientX - rect.left - 40;
+            state.shieldY = e.clientY - rect.top - 40;
+            shield.style.left = state.shieldX + 'px';
+            shield.style.top = state.shieldY + 'px';
+        }
+        // El movimiento del ratón inclina todo el panel
+        state.tilt = (e.clientX - window.innerWidth/2) * 0.015;
+        panel.style.setProperty('--tilt', state.tilt + 'deg');
+    };
+
+    const gameLoop = setInterval(() => {
+        if(!state.active) return;
+
+        // 1. Radiación (Cálculo de Proximidad)
+        let dX = state.shieldX + 40 - 189; // Centro del núcleo
+        let dY = state.shieldY + 40 - 59;
+        let distance = Math.sqrt(dX*dX + dY*dY);
+        state.rad = distance > 50; // El blindaje funciona a menos de 50px
+
+        // 2. Cronómetro (Miente con radiación)
+        state.timer -= 0.016;
+        const timerUI = document.getElementById('main-timer');
+        if(state.rad) {
+            timerUI.textContent = (Math.random() * 99).toFixed(2);
+            timerUI.style.opacity = Math.random() > 0.5 ? "1" : "0.5";
+            panel.classList.add('caos-total');
+        } else {
+            timerUI.textContent = Math.max(0, state.timer).toFixed(2);
+            timerUI.style.opacity = "1";
+            panel.classList.remove('caos-total');
+        }
+
+        // 3. Mercurio (Física 15% más lenta + Viscosidad)
+        state.mercVel += Math.sin(state.tilt * Math.PI / 180) * 0.425; 
+        state.mercVel *= 0.985; // Fricción añadida
+        state.mercPos += state.mercVel;
+        document.getElementById('drop').style.left = state.mercPos + '%';
+        if(state.mercPos < 5 || state.mercPos > 95) fail("SISTEMA DE NIVEL", "El mercurio cerró el contacto.", "La ley de gravedad no perdona. Si el panel se inclina demasiado, el líquido metal cierra el circuito.");
+
+        // 4. Presión (Deriva Neumática)
+        state.pressure += (Math.random() - 0.45) * 0.6;
+        document.getElementById('needle').style.left = state.pressure + '%';
+        if(state.pressure < 2 || state.pressure > 98) fail("SISTEMA NEUMÁTICO", "Implosión por desequilibrio de presión.", "Ley de Boyle: La presión y el volumen son inversamente proporcionales. Has superado el límite de ruptura del tanque.");
+
+        // 5. Química (pH Estabilizado en 7)
+        if (state.ph < 6.8) state.ph -= 0.009; 
+        else if (state.ph > 7.2) state.ph -= 0.005;
+        // Si está entre 6.8 y 7.2 se queda estable (tu petición)
+
+        if(state.temp > 25) state.temp -= 0.2; // Enfriamiento activo
+        
+        // Interfaz pH (Miente con radiación)
+        const phUI = document.getElementById('ph-val');
+        if(state.rad) {
+            phUI.textContent = (Math.random() * 14).toFixed(1);
+            phUI.style.color = "magenta";
+        } else {
+            phUI.textContent = state.ph.toFixed(1);
+            phUI.style.color = (state.ph >= 6.8 && state.ph <= 7.2) ? "var(--success)" : "white";
+        }
+
+        document.getElementById('temp-val').textContent = Math.floor(state.temp);
+        document.getElementById('temp-bar-fill').style.width = Math.min(state.temp, 100) + "%";
+        document.getElementById('temp-bar-fill').style.background = state.temp > 80 ? "red" : "var(--success)";
+
+        // 6. Cables Locos por Radiación
+        const wires = document.querySelectorAll('.wire');
+        if(state.rad) {
+            wires.forEach(w => w.style.background = ['#ff0000','#0000ff','#ffff00'][Math.floor(Math.random()*3)]);
+        } else {
+            document.getElementById('w0').style.background = 'red';
+            document.getElementById('w1').style.background = 'blue'; // EL CORRECTO
+            document.getElementById('w2').style.background = 'yellow';
+        }
+
+        // Chequeos de muerte real (ocultos por la radiación)
+        if(state.ph < 0) fail("SISTEMA QUÍMICO", "Corrosión ácida del percutor.", "El ácido sulfúrico tiene un pH cercano a 0 y es altamente corrosivo. Debiste neutralizarlo con la base.");
+        if(state.temp > 100) fail("SISTEMA TÉRMICO", "Detonación por sobrecalentamiento.", "La neutralización es una reacción exotérmica; libera calor. El explosivo plástico se vuelve inestable a los 100°C.");
+        if(state.timer <= 0) fail("TIEMPO", "Protocolo Omega: Cronómetro llegó a cero.", "La paciencia es una virtud, pero no en la desactivación de bombas.");
+
+    }, 16);
+
+    document.addEventListener('keydown', (e) => {
+        if(!state.active) return;
+        const key = e.key.toLowerCase();
+        if(key === 'a') state.pressure -= 6;
+        if(key === 's') state.pressure += 6;
+        if(e.key === 'ArrowUp') { state.ph += 0.6; state.temp += 9; }
+        if(e.key === 'ArrowDown') { state.temp -= 12; state.ph -= 0.15; }
+    });
+
+    function cut(i) {
+        if(state.rad) {
+            fail("INTERFERENCIA", "Cortaste a ciegas bajo interferencia gamma.", "La radiación ionizante provoca 'bit-flips' y alucinaciones en los sensores. Sin el escudo de plomo, no puedes confiar en lo que ves.");
+        } else if(i === 1) {
+            win();
+        } else {
+            fail("ERROR DE CABLEADO", "Circuito de trampa activado.", "El cable azul es el único que puentea el condensador principal. Al cortar otro, la carga se liberó instantáneamente.");
+        }
+    }
+
+    function fail(t, r, a) {
+        state.active = false;
+        clearInterval(gameLoop);
+        document.getElementById('overlay').style.display = 'flex';
+        document.getElementById('title').textContent = "PROTOCOLO FALLIDO: " + t;
+        document.getElementById('title').style.color = "var(--danger)";
+        document.getElementById('reason').textContent = r;
+        document.getElementById('advice').textContent = a;
+    }
+
+    function win() {
+        state.active = false;
+        clearInterval(gameLoop);
+        document.getElementById('overlay').style.display = 'flex';
+        document.getElementById('title').textContent = "PROYECTO OMEGA: DESACTIVADO";
+        document.getElementById('title').style.color = "var(--success)";
+        document.getElementById('reason').textContent = "Has estabilizado con éxito todos los parámetros físicos y químicos.";
+        document.getElementById('advice').textContent = "Felicidades. Has demostrado un dominio absoluto de la física nuclear, la termodinámica y el equilibrio de fluidos. El sector está a salvo.";
+    }
+</script>
+</body>
+</html>

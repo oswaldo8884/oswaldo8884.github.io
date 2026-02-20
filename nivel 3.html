@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Critical Mass - Nivel 3</title>
+    <style>
+        :root { --danger: #ff4444; --success: #00C851; --bg: #0e0e0e; }
+        body { background: var(--bg); color: white; font-family: 'Courier New', monospace; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        
+        #game-container { background: #1a1a1a; padding: 30px; border: 3px solid #444; border-radius: 15px; width: 400px; text-align: center; position: relative; box-shadow: 0 0 30px rgba(0,0,0,0.8); }
+        
+        #timer-display { font-size: 4rem; color: #fff; margin-bottom: 10px; font-weight: bold; }
+        .warning { color: var(--danger) !important; animation: blink 0.5s infinite; }
+        
+        /* El Manómetro */
+        #gauge-container { width: 300px; height: 150px; background: #222; margin: 20px auto; border-radius: 150px 150px 0 0; position: relative; border: 5px solid #555; overflow: hidden; }
+        .target-zone { width: 60px; height: 100%; background: rgba(0, 200, 81, 0.3); position: absolute; left: 120px; border-left: 2px dashed var(--success); border-right: 2px dashed var(--success); }
+        #needle { width: 4px; height: 120px; background: var(--danger); position: absolute; bottom: 0; left: 148px; transform-origin: bottom center; transition: transform 0.05s linear; box-shadow: 0 0 10px red; }
+
+        #alert-msg { height: 40px; color: #ffaa00; font-weight: bold; font-size: 0.9rem; margin-top: 10px; }
+        
+        .controls { display: flex; justify-content: space-around; margin-top: 20px; }
+        .btn { background: #333; color: white; border: 2px solid #555; padding: 15px; width: 45%; font-family: inherit; }
+        .active { background: #555; border-color: #fff; }
+
+        @keyframes blink { 50% { opacity: 0; } }
+    </style>
+</head>
+<body>
+<a href="menu.html" style="
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    padding: 10px 15px;
+    background: rgba(0, 255, 65, 0.1);
+    border: 1px solid #00ff41;
+    color: #00ff41;
+    text-decoration: none;
+    font-family: 'Courier New', monospace;
+    font-size: 0.8rem;
+    font-weight: bold;
+    border-radius: 4px;
+    z-index: 2000;
+    transition: all 0.3s;
+">
+    &lt; VOLVER AL MENU
+</a>
+<div id="game-container">
+    <div id="timer-display">60:00</div>
+    <div id="alert-msg">ESTABILIZA LA PRESIÓN</div>
+
+    <div id="gauge-container">
+        <div class="target-zone"></div>
+        <div id="needle"></div>
+    </div>
+
+    <div class="controls">
+        <div id="btn-A" class="btn"> [A] VÁLVULA<br><small>BAJAR</small></div>
+        <div id="btn-S" class="btn"> [S] COMPRESOR<br><small>SUBIR</small></div>
+    </div>
+
+    <div id="overlay" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); flex-direction:column; justify-content:center; align-items:center; z-index:100;">
+        <h1 id="res-title"></h1>
+        <p id="res-advice" style="padding: 20px;"></p>
+        <button onclick="location.reload()" style="padding:10px 20px; background:var(--success); color:white; border:none; cursor:pointer;">REINTENTAR</button>
+    </div>
+
+
+<script>
+    let timeLeft = 60.00;
+    let pressure = 0; // 0 es el centro
+    let velocity = 0;
+    let gameActive = true;
+    
+    // Dificultad base y modificadores
+    let chaosPower = 0.02; 
+
+    const gameLoop = setInterval(() => {
+        if (!gameActive) return;
+
+        // 1. Actualizar Tiempo
+        timeLeft -= 0.016;
+        document.getElementById('timer-display').textContent = timeLeft.toFixed(2).replace('.', ':');
+
+        // 2. Aumentar dificultad por hitos
+        if (timeLeft <= 30 && timeLeft > 15) {
+            chaosPower = 0.05;
+            document.getElementById('alert-msg').textContent = "¡ADVERTENCIA: FUGA DETECTADA!";
+            document.getElementById('timer-display').style.color = "#ffaa00";
+       } else if (timeLeft <= 15 && timeLeft > 5) {
+            chaosPower = 0.07;
+            document.getElementById('alert-msg').textContent = "¡CRÍTICO: FALLO ESTRUCTURAL!";
+            document.getElementById('timer-display').classList.add('warning');
+        } else if (timeLeft <= 5) {
+            chaosPower = 0.08;
+            document.getElementById('alert-msg').textContent = "¡IMPLOSIÓN INMINENTE!";
+        }
+
+        // 3. Lógica de la Aguja (Caos)
+        // La aguja tiende a desviarse aleatoriamente con más fuerza según el chaosPower
+        velocity += (Math.random() - 0.5) * chaosPower;
+        pressure += velocity;
+        
+        // Fricción para que no sea infinito
+        velocity *= 0.98;
+
+        // Limites visuales (Aguja)
+        let angle = pressure * 10; // Multiplicador de ángulo
+        document.getElementById('needle').style.transform = `rotate(${angle}deg)`;
+
+        // 4. Condiciones de Derrota (Fuera de rango)
+        if (Math.abs(angle) > 85) {
+            endGame(false, "EL TANQUE ESTALLÓ", "La presión superó el límite de los materiales. Según la Ley de Boyle, a volumen constante, la presión y temperatura son directamente proporcionales. El calor de la fricción interna hizo el resto.");
+        }
+
+        // 5. Condición de Victoria
+        if (timeLeft <= 0) {
+            endGame(true, "SISTEMA ESTABILIZADO", "Has mantenido el equilibrio molecular bajo condiciones de estrés extremo. ¡Nivel completado!");
+        }
+    }, 16);
+
+    // Controles por teclado
+    document.addEventListener('keydown', (e) => {
+        if (!gameActive) return;
+        if (e.key.toLowerCase() === 'a') {
+            velocity -= 0.15; // Empuja la aguja a la izquierda
+            blink('btn-A');
+        }
+        if (e.key.toLowerCase() === 's') {
+            velocity += 0.15; // Empuja la aguja a la derecha
+            blink('btn-S');
+        }
+    });
+
+    function blink(id) {
+        const b = document.getElementById(id);
+        b.classList.add('active');
+        setTimeout(() => b.classList.remove('active'), 100);
+    }
+
+    function endGame(win, title, advice) {
+        gameActive = false;
+        clearInterval(gameLoop);
+        document.getElementById('overlay').style.display = 'flex';
+        document.getElementById('res-title').textContent = title;
+        document.getElementById('res-title').style.color = win ? 'var(--success)' : 'var(--danger)';
+        document.getElementById('res-advice').textContent = advice;
+        if(!win) document.body.style.backgroundColor = "#300";
+    }
+</script>
+</body>
+</html>

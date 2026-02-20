@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Critical Mass - Nivel 8: Caos Visual</title>
+    <style>
+        :root { --rad-color: #ccff00; --danger: #ff4444; --bg: #050808; }
+        body { background: var(--bg); color: white; font-family: 'Courier New', monospace; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; user-select: none; }
+        
+        #game-container { background: #111; padding: 30px; border: 2px solid var(--rad-color); border-radius: 10px; width: 500px; text-align: center; position: relative; transition: all 0.1s; }
+        
+        /* Animación de Glitch Extremo para todo el panel */
+        .panel-glitch { animation: panel-shake 0.15s infinite; filter: hue-rotate(45deg) sepia(50%); border-color: white !important; }
+        @keyframes panel-shake {
+            0% { transform: translate(2px, -2px); }
+            25% { transform: translate(-2px, 2px); }
+            75% { transform: translate(1px, 1px); }
+            100% { transform: translate(0, 0); }
+        }
+
+        #geiger-display { font-size: 1.2rem; color: var(--rad-color); background: #000; padding: 10px; margin-bottom: 20px; border: 1px inset var(--rad-color); }
+        #main-timer { font-size: 3.5rem; color: var(--danger); margin: 10px 0; }
+
+        #core-area { 
+            width: 100%; height: 200px; background: #000; 
+            position: relative; border-radius: 5px; border: 1px solid #333; overflow: hidden;
+        }
+        
+        #radioactive-core { 
+            width: 40px; height: 40px; background: var(--rad-color); 
+            border-radius: 50%; position: absolute; top: 80px; left: 230px; 
+            box-shadow: 0 0 40px var(--rad-color); 
+        }
+        
+        #lead-shield { 
+            width: 120px; height: 120px; background: rgba(100, 100, 100, 0.9); 
+            border: 3px solid #fff; border-radius: 50%; 
+            position: absolute; top: 40px; left: 20px;
+            cursor: grab; display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 0.7rem; z-index: 10;
+        }
+
+        .wire-set { display: flex; justify-content: space-around; margin-top: 25px; }
+        .wire { width: 35px; height: 80px; cursor: pointer; border: 2px solid #222; }
+        
+        #screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); z-index: 100; flex-direction: column; justify-content: center; align-items: center; padding: 20px; text-align: center; }
+    </style>
+</head>
+<body>
+<a href="menu.html" style="
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    padding: 10px 15px;
+    background: rgba(0, 255, 65, 0.1);
+    border: 1px solid #00ff41;
+    color: #00ff41;
+    text-decoration: none;
+    font-family: 'Courier New', monospace;
+    font-size: 0.8rem;
+    font-weight: bold;
+    border-radius: 4px;
+    z-index: 2000;
+    transition: all 0.3s;
+">
+    &lt; VOLVER AL MENU
+</a>
+
+<style>
+    /* Efecto hover para el botón */
+    a[href="index.html"]:hover {
+        background: #00ff41;
+        color: #000;
+        box-shadow: 0 0 15px #00ff41;
+    }
+</style>
+    &lt;     
+</a>
+
+<style>
+    /* Efecto hover para el botón */
+    a[href="index.html"]:hover {
+        background: #00ff41;
+        color: #000;
+        box-shadow: 0 0 15px #00ff41;
+    }
+</style>>
+
+<div id="game-container">
+    <div id="geiger-display">RADIOACTIVIDAD: <span id="cpm">MAX</span> CPM</div>
+    <div id="main-timer">00:30:00</div>
+    
+    <div id="core-area">
+        <div id="radioactive-core"></div>
+        <div id="lead-shield">PLOMO (DRAG)</div>
+    </div>
+
+    <div class="wire-set">
+        <div class="wire" onclick="attemptCut(0)" id="w0"></div>
+        <div class="wire" onclick="attemptCut(1)" id="w1"></div>
+        <div class="wire" onclick="attemptCut(2)" id="w2"></div>
+    </div>
+    <p><small>USA EL PLOMO PARA VER EL CABLE AZUL REAL</small></p>
+
+    <div id="screen">
+        <h1 id="scr-title"></h1>
+        <p id="scr-reason"></p>
+        <p id="scr-advice" style="font-size: 0.8rem; color: #888; margin-top: 15px;"></p>
+        <button onclick="location.reload()" style="background:var(--rad-color); color:#000; padding:10px 20px; border:none; font-weight:bold; cursor:pointer;">REINTENTAR</button>
+    </div>
+<div id="screen">
+    <h1 id="scr-title"></h1>
+    <p id="scr-reason"></p>
+    <div style="display: flex; gap: 10px;">
+        <button onclick="location.reload()">REINTENTAR</button>
+        <button onclick="window.location.href='menu.html'" style="background: #444;">SALIR AL MENÚ</button>
+    </div>
+</div>
+
+<script>
+    let gameActive = true;
+    let isDragging = false;
+    let timeLeft = 30.00;
+    let radiationLevel = 1.0; // 0.0 (seguro) a 1.0 (caos)
+
+    // El cable azul siempre será el índice 1 (el del medio), 
+    // pero los colores visuales cambiarán.
+    const CORRECT_INDEX = 1;
+    const colors = ['red', 'blue', 'yellow'];
+
+    const shield = document.getElementById('lead-shield');
+    const container = document.getElementById('game-container');
+    const coreArea = document.getElementById('core-area');
+
+    shield.addEventListener('mousedown', () => isDragging = true);
+    window.addEventListener('mouseup', () => isDragging = false);
+
+    window.addEventListener('mousemove', (e) => {
+        if (!isDragging || !gameActive) return;
+        const rect = coreArea.getBoundingClientRect();
+        let x = e.clientX - rect.left;
+        let y = e.clientY - rect.top;
+
+        shield.style.left = (x - 60) + 'px';
+        shield.style.top = (y - 60) + 'px';
+
+        // Calcular cercanía al núcleo (250, 100)
+        let dist = Math.sqrt(Math.pow(x - 250, 2) + Math.pow(y - 100, 2));
+        radiationLevel = Math.min(1, dist / 200);
+        
+        updateVisuals();
+    });
+
+    function updateVisuals() {
+        const cpm = Math.floor(radiationLevel * 5000);
+        document.getElementById('cpm').textContent = cpm > 100 ? cpm : "ESTABLE";
+
+        if (radiationLevel > 0.3) {
+            container.classList.add('panel-glitch');
+        } else {
+            container.classList.remove('panel-glitch');
+        }
+    }
+
+    // El bucle de "locura visual"
+    setInterval(() => {
+        if (!gameActive) return;
+
+        [0, 1, 2].forEach(i => {
+            const wire = document.getElementById('w' + i);
+            if (radiationLevel > 0.2) {
+                // Si hay radiación, los colores cambian aleatoriamente
+                wire.style.background = colors[Math.floor(Math.random() * 3)];
+            } else {
+                // Si el plomo está encima, se revelan los colores fijos
+                // El azul siempre será el 1
+                const fixedColors = ['red', 'blue', 'yellow'];
+                wire.style.background = fixedColors[i];
+            }
+        });
+
+        timeLeft -= 0.1;
+        document.getElementById('main-timer').textContent = Math.max(0, timeLeft).toFixed(2);
+        if (timeLeft <= 0) finish(false, "TIEMPO AGOTADO", "La exposición fue letal.");
+    }, 100);
+
+    function attemptCut(index) {
+        if (!gameActive) return;
+        
+        // La lógica NO depende de lo que ves, sino de la posición real
+        if (index === CORRECT_INDEX) {
+            finish(true, "¡LOGRADO!", "Cortaste el cable azul correcto usando el blindaje.");
+        } else {
+            finish(false, "¡BOOM!", "La interferencia visual te hizo cortar el cable equivocado.");
+        }
+    }
+
+    function finish(win, title, reason) {
+        gameActive = false;
+        document.getElementById('screen').style.display = 'flex';
+        document.getElementById('scr-title').textContent = title;
+        document.getElementById('scr-title').style.color = win ? 'var(--rad-color)' : 'var(--danger)';
+        document.getElementById('scr-reason').textContent = reason;
+        document.getElementById('scr-advice').textContent = "CONSEJO: La radiación ionizante provoca 'ruido' en los sensores electrónicos. Siempre estabiliza el blindaje de plomo antes de realizar una conexión crítica.";
+    }
+</script>
+</body>
+</html>

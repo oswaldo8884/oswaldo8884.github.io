@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Critical Mass - Simulador de Desarmado</title>
+    <style>
+        :root {
+            --danger: #ff4444;
+            --success: #00C851;
+            --bg: #1a1a1a;
+            --panel: #2c2c2c;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        #game-container {
+            background: var(--panel);
+            padding: 30px;
+            border: 4px solid #444;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            width: 450px;
+        }
+
+        #timer {
+            font-size: 4rem;
+            color: var(--danger);
+            text-shadow: 0 0 15px rgba(255, 68, 68, 0.5);
+            margin-bottom: 20px;
+        }
+
+        .bomb-internals {
+            background: #111;
+            height: 200px;
+            border-radius: 5px;
+            position: relative;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border: 2px inset #333;
+        }
+
+        .wire {
+            width: 20px;
+            height: 150px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            border-radius: 10px;
+        }
+
+        .wire:hover { transform: scaleX(1.2); }
+        .wire.cut { height: 20px; margin-top: 65px; opacity: 0.5; cursor: default; }
+
+        #wire-red { background: #ff0000; box-shadow: 0 0 10px #ff0000; }
+        #wire-blue { background: #0066ff; box-shadow: 0 0 10px #0066ff; }
+        #wire-green { background: #00ff00; box-shadow: 0 0 10px #00ff00; }
+
+        #message {
+            min-height: 60px;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            margin-top: 15px;
+            padding: 10px;
+            border-top: 1px solid #444;
+        }
+
+        .btn-retry {
+            display: none;
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: var(--success);
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-family: inherit;
+        }
+    </style>
+</head>
+<body>
+<a href="menu.html" style="
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    padding: 10px 15px;
+    background: rgba(0, 255, 65, 0.1);
+    border: 1px solid #00ff41;
+    color: #00ff41;
+    text-decoration: none;
+    font-family: 'Courier New', monospace;
+    font-size: 0.8rem;
+    font-weight: bold;
+    border-radius: 4px;
+    z-index: 2000;
+    transition: all 0.3s;
+">
+    &lt; VOLVER AL MENU
+</a>
+    <div id="game-container">
+        <h2>NIVEL 1: CIRCUITO EN SERIE</h2>
+        <div id="timer">00:10:00</div>
+        
+        <p>Corta el cable que interrumpe la fase antes del detonador.</p>
+        
+        <div class="bomb-internals">
+            <div id="wire-red" class="wire" onclick="cutWire('red')"></div>
+            <div id="wire-blue" class="wire" onclick="cutWire('blue')"></div>
+            <div id="wire-green" class="wire" onclick="cutWire('green')"></div>
+        </div>
+
+        <div id="message">Analiza los cables... Uno alimenta el reloj, otro el detonador y el último es una trampa.</div>
+        <button class="btn-retry" onclick="location.reload()">REINTENTAR</button>
+    </div>
+
+
+    <script>
+        let timeLeft = 10.00;
+        let timerActive = true;
+        const timerDisplay = document.getElementById('timer');
+        const messageDisplay = document.getElementById('message');
+        const retryBtn = document.querySelector('.btn-retry');
+
+        // Lógica del temporizador
+        const countdown = setInterval(() => {
+            if (timerActive) {
+                timeLeft -= 0.01;
+                timerDisplay.textContent = timeLeft.toFixed(2).replace('.', ':');
+                
+                if (timeLeft <= 0) {
+                    explode("¡BOOM! Se acabó el tiempo.");
+                }
+            }
+        }, 10);
+
+        function cutWire(color) {
+            if (!timerActive) return;
+
+            document.getElementById(`wire-${color}`).classList.add('cut');
+
+            if (color === 'blue') { // EL CABLE CORRECTO
+                timerActive = false;
+                timerDisplay.style.color = 'var(--success)';
+                messageDisplay.innerHTML = "<strong>MISIÓN CUMPLIDA:</strong> Cortaste el cable de fase. La corriente no llegó al percutor. Aprendiste: Ley de Circuitos en Serie.";
+                messageDisplay.style.color = 'var(--success)';
+            } 
+            else if (color === 'red') { // LA TRAMPA
+                explode("¡BOOM! Ese cable era un puente de seguridad (Anti-tamper).");
+            } 
+            else { // CABLE INCORRECTO (Reloj)
+                explode("¡BOOM! Al cortar el cable de retorno de energía, causaste un arco eléctrico.");
+            }
+            
+            retryBtn.style.display = 'inline-block';
+        }
+
+        function explode(reason) {
+            timerActive = false;
+            timerDisplay.textContent = "00:00:00";
+            messageDisplay.innerHTML = `<strong>FALLASTE:</strong> ${reason}<br><br><span style="color: #aaa;">CONSEJO: En un circuito en serie, el orden de los factores sí altera el producto. Busca el cable que viene directamente de la batería.</span>`;
+            messageDisplay.style.color = 'var(--danger)';
+            document.body.style.backgroundColor = '#330000';
+            retryBtn.style.display = 'inline-block';
+        }
+    </script>
+
+</body>
+</html>
+
